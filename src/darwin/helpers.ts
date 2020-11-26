@@ -40,6 +40,23 @@ export async function copyAppDist(distPath: string, resourceDir: string) {
   });
 }
 
+interface LooseObject {
+  [key: string]: any
+}
+
+export function addOptionsFromConfig(config: LooseObject) {
+  var options: LooseObject = {};
+  Object.keys(config).forEach(key => {
+    const option = config[key];
+    
+    options[key] = option;
+  });
+
+  var final_options = Object.keys(options).map(key => options[key]);
+
+  return final_options;
+}
+
 type macDeployQtOptions = {
   appName: string;
   buildDir: string;
@@ -66,6 +83,20 @@ export async function runMacDeployQt({
     `-libpath=${qode.qtHome}`,
     ...addonCommands(allAddons),
   ];
+
+  const config = await fs.readJSON(
+    path.resolve(deployDirectory, "config.json")
+  );
+
+  const additional_options = addOptionsFromConfig(config);
+
+  for(var i in additional_options) {
+    const option = additional_options[i];
+
+    if(option != `${appName}.app`) {
+      options.push(option);
+    }
+  }
 
   const macDeployQt = spawn(macDeployQtBin, options, { cwd: buildDir });
 
